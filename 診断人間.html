@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>当たり前アンテナ診断</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:"Noto Sans JP",system-ui;
+  background:linear-gradient(180deg,#f6d6ff,#d6e8ff);
+  display:flex;
+  justify-content:center;
+  padding:20px;
+}
+.wrap{
+  width:100%;
+  max-width:820px;
+  
+}
+.card{
+  background:#ffffff;
+  border-radius:20px;
+  padding:28px;
+  box-shadow:0 12px 40px rgba(38, 76, 123, 0.387);
+  text-align:center;
+}
+h1{
+  font-size:26px;
+  background:linear-gradient(90deg,#8b7cf6,#f6a7c1);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.subtitle{color:#6b7280}
+.question{margin-top:24px;font-size:18px}
+.options{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:16px;
+}
+.opt{
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:#000000;
+  cursor:pointer;
+}
+button{
+  margin-top:24px;
+  padding:10px 18px;
+  border:none;
+  border-radius:12px;
+  background:#8b7cf6;
+  color:#fff;
+  cursor:pointer;
+}
+.result{display:none;margin-top:24px}
+.result.show{display:block}
+.result-images{
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  gap:16px;
+  flex-wrap:nowrap;
+  margin: 24px 0;
+}
+.result-images img{
+  width:160px;
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float{
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-14px)}
+  100%{transform:translateY(0)}
+}
+.result-text{
+  white-space:pre-line;
+  line-height:1.8;
+  color:#6b7280;
+}
+@media(max-width:640px){
+  .options{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+<div class="card">
+
+<h1>当たり前アンテナ診断</h1>
+<p class="subtitle">〜あなたの“当たり前感覚”はどのタイプ？〜</p>
+
+<div id="intro">
+  <br>
+  <br>
+  <p>直感で答えて、あなたの世界観を知ろう。<br>質問は全部で6問だよ！</p>
+  <br>
+  <br>
+  <br>
+  <button onclick="start()">▶ 診断をはじめる</button>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+</div>
+
+<div id="quiz" style="display:none">
+  <div id="qText" class="question"></div>
+  <div id="options" class="options"></div>
+  </div>
+
+  <div id="result" class="result">
+  <h2 id="resultTitle"></h2>
+  <div id="resultImages" class="result-images"></div>
+  <p id="resultText" class="result-text"></p>
+　<button onclick="restart()">▶ もう一回診断する</button>
+</div>
+</main>
+      <footer>
+        <small>作成：皆様の新しい気づきになりますようにっ</small>
+      </footer>
+
+</div>
+</div>
+
+<script>
+const QUESTIONS = [
+ {id:'q1',text:'Q1. 約束の集合時間、どう動く？',options:[
+  {key:'A',text:'5〜10分前には到着'},
+  {key:'B',text:'時間ちょうどか、ちょい遅れる'},
+  {key:'C',text:'気分によって結構バラバラ'},
+  {key:'D',text:'「まあそのうち着くでしょ」とゆるく行く'}]},
+ {id:'q2',text:'Q2. 初対面の人の“空気”、どう読む？',options:[
+  {key:'A',text:'全力で読む'},
+  {key:'B',text:'一応読むけど無理はしない'},
+  {key:'C',text:'気づいたら自分のペースで話してる'},
+  {key:'D',text:'空気とかあまり気にしない！'}]},
+ {id:'q3',text:'Q3. 飲食店で注文するときのクセは？',options:[
+  {key:'A',text:'周りと同じか似たものを選ぶ'},
+  {key:'B',text:'他の人と被らないように選ぶ'},
+  {key:'C',text:'気になったら変なものでも頼む'},
+  {key:'D',text:'食べたいと思ったものを選ぶ！'}]},
+ {id:'q4',text:'Q4. SNSに投稿するときの意識は？',options:[
+  {key:'A',text:'人の反応をけっこう気にする'},
+  {key:'B',text:'ちょっと気にする'},
+  {key:'C',text:'思いついたらノリで投稿'},
+  {key:'D',text:'気が向いたときだけ気にせず投稿'}]},
+ {id:'q5',text:'Q5. “常識”って聞くと？',options:[
+  {key:'A',text:'基本守るべきもの'},
+  {key:'B',text:'ある程度は大事'},
+  {key:'C',text:'人によるよね'},
+  {key:'D',text:'そもそも誰が決めたの？'}]},
+ {id:'q6',text:'Q6. 予定が崩れた時の反応は？',options:[
+  {key:'A',text:'困る！すぐ立て直す'},
+  {key:'B',text:'わりと柔軟に変更できる'},
+  {key:'C',text:'予定より気分優先'},
+  {key:'D',text:'崩れても「まあいっか！」で済む'}]}
+];
+
+const RESULT_TEXTS = {
+A: {title:'Aタイプ｜超あたりめ〜タイプ', body:'あなたは “当たり前”のアンテナがとても高く、\n周りの空気や流れを自然にキャッチできる人。\n\n相手の気持ちを気にかけ、場がスムーズになるように動けるから、\n「一緒にいて安心する」と言われることが多いのでは・・・？\n\nただ、気遣い上手ゆえに“自分の気分”を後回しにしがち。\nたまには周りではなく 自分の“心地よさ”を基準に動く日 を作るといいかも？\n\nあなたの協調性は、誰かにとってすごく価値のあるものだと思うよ！'},
+      B: {title:'Bタイプ｜ちょいズレ個性派タイプ', body:'基本は周りに合わせられるけど、\nふとした瞬間に「え、それ普通？」と感じることがあるあなた。\n\nその“ちょいズレ感”こそが、あなたの魅力。\n実は他の人より観察力があって、物事を違う角度から見られるタイプ。\n\n周りと完全に同じじゃなくていい。\nあなたの“ほんの少しの差”が、場を面白くしたり、\n新しいアイデアを生んだりするんだよ。\n\n常識も大事にしながら、\n自分らしさもそっと混ぜる絶妙バランスの人 です！'},
+      C: {title:'Cタイプ｜唯一無二タイプ', body:'あなたは無自覚に個性が光るタイプ！\n「当たり前」よりも **“自分の心地よさ”** を優先する傾向が強いみたい。\n\n気づいたら自分のペース、\n気づいたら自分のセンス、\n気づいたら自分の方向へ進んでいる。\n\nだけどそれはワガママじゃなく、\n**“自分の軸がしっかりしている”** ということ。\n\nあなたが自然体でいるだけで、\n周りはちょっと刺激されたり、\n勇気をもらっていたりするよ。\n\n唯一無二、そのままで魅力爆発タイプです！'},
+      D: {title:'Dタイプ｜ゆるゆるマイペースタイプ', body:'あなたは“当たり前”にほぼ縛られない、自由で柔らかい人。\n\n「そういう考えもあるよね"\n"まあいっか"\nそんなスタンスで日々を楽しむから、\nストレス耐性が高く、周りも癒される存在。\n\n予定が変わっても動じないし、\n常識に囚われず自分のペースを大事にできる。\n\nその “ゆるさ” があなたの最大の魅力。\nあなたの自由な世界観は、誰かの救いになってます！'}
+    };
+
+const COMPOSITE = {
+      'A+B': {title:'A×B：協調×ちょいズレ個性の“しなやかバランス人間”', body:'あなたは「空気を読む力」と「独自の視点」をどちらも持っている、実はかなりレアなタイプ。\n\n普段は周りに合わせて動くこともできるけれど、ふとしたタイミングで“自分だけの視点”が出てくる。その少しのズレが、あなたの魅力を強く引き立てているみたい。\n\n気づくと「その考え方おもしろいね」「なんかあなただけ違う発想するよね」と言われることはない？\n\nあなたの中にある協調性 × 小さな個性のひらめき。この組み合わせは、場を和ませつつアイデアを生む力になる。\n\n当たり前を守りつつ、自分らしさも忘れない。そんな絶妙なバランス感覚を持った人です.'},
+      'A+C': {title:'A×C：協調 × 唯一無二の“ギャップ魅力クリエイター”', body:'あなたの魅力は、“普通に見えて普通じゃない”というギャップ。\n\n普段は周りに合わせられるし、場の空気も自然に読める。だけど、芯の部分は驚くほどオリジナルで、誰にも流されないしっかりした個性を持っているタイプ。\n\nあなたと関わった人は「優しいのに、考え方はめちゃくちゃ魅力的」「穏やかだけど、芯が強い」と感じることが多いはず。\n\nあなたの“協調 × 自分軸”の合成は、柔らかく見えて実は強い、そんな独特の存在感をつくり出している。そっと放つセンスや視点が、誰かの心をふわっと華やかにする人です.'},
+      'A+D': {title:'A×D：協調 × マイペースの“柔らか癒しタイプ”', body:'あなたは気遣い上手だけど、無理をしない人。優しさとゆるさが自然に共存している、まさに癒し成分の合成体。\n\n人の気持ちを考えながら動けるから、場の空気がすごく柔らかくなる。だけど、しっかりマイペースも保てるから、疲れにくいバランスの良さも持っている。\n\nあなたと一緒にいると「ほどよく自由で、ほどよく優しい」そんな安心感が生まれて、周りの人は自然と笑顔になることが多い。\n\n常識にしばられず、でも思いやりを忘れない。そんな“ゆる優しさ”があなたの最大の魅力です.'},
+      'B+C': {title:'B×C：ちょいズレ × 唯一無二の“センス爆発タイプ”', body:'あなたは“ちょっとズレてる”どころではなく、そのズレすら個性として完璧に成立してしまうタイプ。\n\n周りの人が考えもしない角度から物事を見る力があって、あなたの言葉や選ぶものは気づけば誰かに刺激を与えている。\n\n「なんでその発想になるの？」「そのセンスめっちゃ好き」と言われることが多いなら、それはまさにBCタイプの証。\n\nあなたは無意識のうちに人の価値観をちょっと揺さぶる存在になっている。\n\n当たり前にとらわれないあなただからこそ、生み出せる世界があるタイプです.'},
+      'B+D': {title:'B×D：ちょいズレ × マイペースの“ゆる個性アーティスト”', body:'あなたは、自由で軽やかで、ちょっと不思議な魅力を持ってるタイプ。\n\nマイペースで自分の気分を大切にしつつ、その中にちょっとズレた発想が混ざっているから、自然と他の人にはない味が出てくる。\n\nそんなあなたの行動や言葉は、ゆるっとしているのに、妙に心に残ったり、面白かったりする。\n\n周りと違うことを気にするより、自分の感覚を信じられる人だから、結果的に唯一無二の空気を生み出す。\n\nあなたがいるだけで、その場に小さな彩りが生まれます.'},
+      'C+D': {title:'C×D：唯一無二 × マイペースの“自由全開オリジナルタイプ”', body:'あなたは自分の世界をしっかり持っているタイプ。マイペースで自由で、誰にも似ていない。\n\nしかもそれをわざとやっているわけではなく、“自然体のあなた”のままで個性が出てしまっているところがポイント。\n\n常識や当たり前があっても、それに縛られず、自分の心地よさやペースを何より大事にできる人。\n\n不思議とあなたがいると周りはゆるくなったり、自由さを思い出したりする。あなたの存在そのものが小さな革命みたいな、オリジナルの光を放っています.'},
+      'A+B+C': {title:'A・B・C：バランス個性タイプ', body:'協調・観察・個性の3つをバランスよく持つ万能タイプ。空気も読めるし、分析もできるし、個性もある。どのモードにも切り替えられるから、環境適応力が非常に高いのが特徴です。ただ、器用すぎて自分の“本音モード”がわかりづらくなることも.'},
+      'A+C+D': {title:'A・C・D：ゆる個性自由人タイプ', body:'協調力・個性・自由の3つを合わせ持ったタイプ。空気は読めるけど縛られず、自分を大事にしつつも人の気持ちも汲める絶妙な柔らかさが魅力です。周りからは「なんか心地いい」「一緒にいて楽」と言われる存在.'},
+      'B+C+D': {title:'B・C・D：カオス個性クリエイタータイプ', body:'直感・観察・自由さが混ざり合ったカオスで天才肌タイプ。既存の枠に収まりづらく、独特の発想や言動で周囲を驚かせます。だけどそのカオスさが誰かの刺激になったり、新しい流れを生む原動力にも。予測不能だけど魅力的な人.'},
+      'A+B+D': {title:'A・B・D：柔軟協調タイプ', body:'協調性は高いのに、無理をしすぎず自分のペースも守れる優しいタイプ。空気を読みながらも、自分が疲れないバランスを自然に取れる人です。周囲に安心感と柔らかさを与える調和の達人.'},
+      'A+B+C+D': {title:'完全ニュートラルタイプ（ミラクル均等）', body:'全タイプが同じ割合という超レアケース！協調・観察・個性・自由の4つが均等に揃ったニュートラルな存在です。どのタイプにも適応できる超柔軟性と、どこにも偏らない安定感が魅力.'}
+};
+
+let current=0;
+let scores={A:0,B:0,C:0,D:0};
+
+function start(){
+ intro.style.display='none';
+ quiz.style.display='block';
+ render();
+}
+
+function render(){
+ const q=QUESTIONS[current];
+ qText.innerText=q.text;
+ options.innerHTML='';
+ q.options.forEach(o=>{
+  const b=document.createElement('button');
+  b.className='opt';
+  b.innerText=o.text;
+  b.onclick=()=>{
+   scores[o.key]++;
+   current++;
+   current<QUESTIONS.length?render():showResult();
+  };
+  options.appendChild(b);
+ });
+}
+
+function showResult(){
+ quiz.style.display='none';
+ result.classList.add('show');
+
+ const max=Math.max(...Object.values(scores));
+ const types=Object.keys(scores).filter(k=>scores[k]===max);
+ const key=types.sort().join('+');
+
+ const data=types.length===1?RESULT_TEXTS[types[0]]:COMPOSITE[key];
+ resultTitle.innerText=data.title;
+ resultText.innerText=data.body;
+
+ resultImages.innerHTML = '';
+
+types.forEach(t => {
+  const imgs = [
+    `images/${t}_girl.png`,
+    `images/${t}_boy.png`
+  ];
+
+  imgs.forEach(src => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = t;
+    resultImages.appendChild(img);
+  });
+});
+}
+
+function restart(){
+ current=0;
+ scores={A:0,B:0,C:0,D:0};
+ result.classList.remove('show');
+ intro.style.display='block';
+}
+</script>
+</body>
+</html>
